@@ -60,6 +60,34 @@ AntiDebugTraining
 
 We will not implement all mechanisms at once. Each mechanism should be added only after studying the corresponding ScyllaHide documentation section.
 
+## Current Scaffold
+
+The initial scaffold is a native Visual Studio C++ Win32 application:
+
+- `AntiDebugTraining.sln`
+- `AntiDebugTraining.vcxproj`
+- `src/Core/IAntiDebugMechanism.h`
+- `src/Core/MechanismRegistry.h`
+- `src/App/MainWindow.h`
+
+The UI currently shows registered mechanisms in a table. Each mechanism has exactly one execution mode:
+
+- `Live`: controlled by its row checkbox and polled once per second while checked.
+- `Trigger`: never polled; run it deliberately with its row `Check` button.
+
+Results are shown per mechanism, including status, details, and the last check time. The final status line reports `debugger detected`, `clean`, or an error state.
+
+The first registered mechanisms are framework self-tests. They are not anti-debugging techniques; they only verify that live execution, trigger execution, registration, and UI result rendering are wired correctly.
+
+To add a real mechanism after studying a ScyllaHide section:
+
+1. Create a class that implements `IAntiDebugMechanism`.
+2. Return metadata from `Id`, `Name`, `Category`, and `Description`.
+3. Implement `Run` so it performs only that one local, educational check.
+4. Decide whether the mechanism is `Live` or `Trigger`. Override `SupportsLiveMode` to return `false` for trigger-only mechanisms.
+5. Register it with the mechanism registry.
+6. Add the source and header to the Visual Studio project.
+
 ## Phase 2: Understanding Anti-Anti-Debugging
 
 The original idea for the second step was to write an anti-anti-debug library.
@@ -113,4 +141,3 @@ Technique: <name>
 - `ScyllaHide.pdf`
 
 We will go through this document section by section and add mechanisms only when they have been studied.
-

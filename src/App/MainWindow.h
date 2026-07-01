@@ -1,0 +1,76 @@
+#pragma once
+
+#include "../Core/IAntiDebugMechanism.h"
+
+#include <Windows.h>
+
+#include <memory>
+#include <vector>
+
+namespace adt {
+
+class MainWindow {
+public:
+    explicit MainWindow(HINSTANCE instance);
+
+    bool Create(int show_command);
+    int RunMessageLoop();
+
+private:
+    struct MechanismRow {
+        std::unique_ptr<IAntiDebugMechanism> mechanism;
+        MechanismResult result = MechanismResult::NotRun();
+        std::wstring last_checked;
+
+        HWND action_control = nullptr;
+        HWND name_label = nullptr;
+        HWND category_label = nullptr;
+        HWND mode_label = nullptr;
+        HWND status_label = nullptr;
+        HWND detail_label = nullptr;
+        HWND last_checked_label = nullptr;
+    };
+
+    static LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+
+    LRESULT HandleMessage(UINT message, WPARAM wparam, LPARAM lparam);
+
+    void CreateControls();
+    void CreateHeaderControls();
+    void LoadMechanisms();
+    void CreateMechanismRow(size_t index);
+    void LayoutControls(int width, int height);
+    void LayoutHeader(int y, int width);
+    void LayoutRow(size_t index, int y, int width);
+    void RefreshMechanismRow(size_t index);
+    void RunLiveMechanisms();
+    void RunMechanism(size_t index, ExecutionMode mode);
+    void ClearResults();
+    void SetStatusText(const std::wstring& text);
+    void ApplyUIFont(HWND control);
+    void ApplyHeaderFont(HWND control);
+    bool IsLiveMechanism(size_t index) const;
+    bool IsRowChecked(size_t index) const;
+    bool IsActionControlId(WORD control_id, size_t* index) const;
+
+    HINSTANCE instance_ = nullptr;
+    HWND window_ = nullptr;
+    HWND hint_label_ = nullptr;
+    HWND clear_button_ = nullptr;
+    HWND header_action_label_ = nullptr;
+    HWND header_name_label_ = nullptr;
+    HWND header_category_label_ = nullptr;
+    HWND header_mode_label_ = nullptr;
+    HWND header_status_label_ = nullptr;
+    HWND header_details_label_ = nullptr;
+    HWND header_last_checked_label_ = nullptr;
+    HWND status_label_ = nullptr;
+    HFONT ui_font_ = nullptr;
+    HFONT header_font_ = nullptr;
+    HBRUSH window_brush_ = nullptr;
+    bool is_running_ = false;
+    std::vector<MechanismRow> mechanisms_;
+};
+
+}  // namespace adt
+

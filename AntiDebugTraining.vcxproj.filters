@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{F64DC7FE-12B5-4D26-835E-65E4781E1763}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{9B405B38-36BF-4089-9D4E-A91AF961BD91}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\App">
+      <UniqueIdentifier>{87CF4E01-5BDA-4E2A-9D2C-5261BC8DA08E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Core">
+      <UniqueIdentifier>{8A11B82C-C65D-4722-9A22-D9F2C5A7B870}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Mechanisms">
+      <UniqueIdentifier>{A9182923-C248-4FD2-A925-51E092C17E9F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\App">
+      <UniqueIdentifier>{43EBFD7E-B561-499E-8D27-7A735C73C47A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core">
+      <UniqueIdentifier>{1F1459C7-CCF3-4E14-96E6-F5132AF29E07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Mechanisms">
+      <UniqueIdentifier>{62D51625-2092-4B96-A0D2-E92679B79CD4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\App\MainWindow.h">
+      <Filter>Header Files\App</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\MechanismContext.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\MechanismRegistry.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\MechanismResult.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Core\IAntiDebugMechanism.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Mechanisms\FrameworkSelfTestMechanism.h">
+      <Filter>Header Files\Mechanisms</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Mechanisms\FrameworkTriggerSelfTestMechanism.h">
+      <Filter>Header Files\Mechanisms</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\App\MainWindow.cpp">
+      <Filter>Source Files\App</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Core\MechanismRegistry.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Mechanisms\FrameworkSelfTestMechanism.cpp">
+      <Filter>Source Files\Mechanisms</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Mechanisms\FrameworkTriggerSelfTestMechanism.cpp">
+      <Filter>Source Files\Mechanisms</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="app.manifest" />
+  </ItemGroup>
+</Project>
