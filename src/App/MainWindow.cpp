@@ -105,6 +105,23 @@ std::wstring WindowText(HWND control) {
     return text;
 }
 
+void SetControlTextIfChanged(HWND control, const std::wstring& text) {
+    if (WindowText(control) != text) {
+        SetWindowTextW(control, text.c_str());
+    }
+}
+
+void SetControlTextIfChanged(HWND control, const wchar_t* text) {
+    SetControlTextIfChanged(control, std::wstring(text));
+}
+
+void SetControlFontIfChanged(HWND control, HFONT font) {
+    const auto current_font = reinterpret_cast<HFONT>(SendMessageW(control, WM_GETFONT, 0, 0));
+    if (current_font != font) {
+        SendMessageW(control, WM_SETFONT, reinterpret_cast<WPARAM>(font), TRUE);
+    }
+}
+
 }  // namespace
 
 namespace adt {
@@ -479,16 +496,15 @@ void MainWindow::LayoutRow(size_t index, int y, int width) {
 void MainWindow::RefreshMechanismRow(size_t index) {
     const MechanismRow& row = mechanisms_.at(index);
 
-    SetWindowTextW(row.name_label, Copy(row.mechanism->Name()).c_str());
-    SetWindowTextW(row.category_label, Copy(row.mechanism->Category()).c_str());
-    SetWindowTextW(row.mode_label, IsLiveMechanism(index) ? L"Live" : L"Trigger");
-    SetWindowTextW(row.status_label, ToDisplayText(row.result.state));
-    SetWindowTextW(row.detail_label, row.result.detail.c_str());
-    SetWindowTextW(row.last_checked_label, row.last_checked.c_str());
+    SetControlTextIfChanged(row.name_label, Copy(row.mechanism->Name()));
+    SetControlTextIfChanged(row.category_label, Copy(row.mechanism->Category()));
+    SetControlTextIfChanged(row.mode_label, IsLiveMechanism(index) ? L"Live" : L"Trigger");
+    SetControlTextIfChanged(row.status_label, ToDisplayText(row.result.state));
+    SetControlTextIfChanged(row.detail_label, row.result.detail);
+    SetControlTextIfChanged(row.last_checked_label, row.last_checked);
 
     const HFONT status_font = row.result.state == DetectionState::DebuggerDetected ? status_font_ : ui_font_;
-    SendMessageW(row.status_label, WM_SETFONT, reinterpret_cast<WPARAM>(status_font), TRUE);
-    InvalidateRect(row.status_label, nullptr, TRUE);
+    SetControlFontIfChanged(row.status_label, status_font);
 }
 
 void MainWindow::RunLiveMechanisms() {
@@ -539,10 +555,12 @@ void MainWindow::RunMechanism(size_t index, ExecutionMode mode) {
     context.owner_window = window_;
     context.mode = mode;
 
-    SetStatusText(L"Running: " + Copy(mechanisms_[index].mechanism->Name()));
-    mechanisms_[index].result = MechanismResult::Running();
-    RefreshMechanismRow(index);
-    UpdateWindow(window_);
+    if (mode == ExecutionMode::Manual) {
+        SetStatusText(L"Running: " + Copy(mechanisms_[index].mechanism->Name()));
+        mechanisms_[index].result = MechanismResult::Running();
+        RefreshMechanismRow(index);
+        UpdateWindow(window_);
+    }
 
     try {
         mechanisms_[index].result = mechanisms_[index].mechanism->Run(context);
@@ -567,10 +585,9 @@ void MainWindow::ClearResults() {
 }
 
 void MainWindow::SetStatusText(const std::wstring& text) {
-    SetWindowTextW(status_label_, text.c_str());
     const HFONT status_font = text == L"debugger detected" ? status_font_ : ui_font_;
-    SendMessageW(status_label_, WM_SETFONT, reinterpret_cast<WPARAM>(status_font), TRUE);
-    InvalidateRect(status_label_, nullptr, TRUE);
+    SetControlTextIfChanged(status_label_, text);
+    SetControlFontIfChanged(status_label_, status_font);
 }
 
 COLORREF MainWindow::TextColorForStatic(HWND control) const {
