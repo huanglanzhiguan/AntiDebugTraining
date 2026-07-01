@@ -50,6 +50,9 @@
     <ClInclude Include="src\Mechanisms\FrameworkTriggerSelfTestMechanism.h">
       <Filter>Header Files\Mechanisms</Filter>
     </ClInclude>
+    <ClInclude Include="src\Mechanisms\NtQueryInformationProcessMechanisms.h">
+      <Filter>Header Files\Mechanisms</Filter>
+    </ClInclude>
     <ClInclude Include="src\Mechanisms\NtQuerySystemInformationMechanisms.h">
       <Filter>Header Files\Mechanisms</Filter>
     </ClInclude>
@@ -74,6 +77,9 @@
       <Filter>Source Files\Mechanisms</Filter>
     </ClCompile>
     <ClCompile Include="src\Mechanisms\FrameworkTriggerSelfTestMechanism.cpp">
+      <Filter>Source Files\Mechanisms</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Mechanisms\NtQueryInformationProcessMechanisms.cpp">
       <Filter>Source Files\Mechanisms</Filter>
     </ClCompile>
     <ClCompile Include="src\Mechanisms\NtQuerySystemInformationMechanisms.cpp">

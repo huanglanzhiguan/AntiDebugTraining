@@ -89,6 +89,7 @@
     <ClInclude Include="src\Core\IAntiDebugMechanism.h" />
     <ClInclude Include="src\Mechanisms\FrameworkSelfTestMechanism.h" />
     <ClInclude Include="src\Mechanisms\FrameworkTriggerSelfTestMechanism.h" />
+    <ClInclude Include="src\Mechanisms\NtQueryInformationProcessMechanisms.h" />
     <ClInclude Include="src\Mechanisms\NtQuerySystemInformationMechanisms.h" />
     <ClInclude Include="src\Mechanisms\NtSetInformationProcessMechanisms.h" />
     <ClInclude Include="src\Mechanisms\PebMechanisms.h" />
@@ -99,6 +100,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Mechanisms\FrameworkSelfTestMechanism.cpp" />
     <ClCompile Include="src\Mechanisms\FrameworkTriggerSelfTestMechanism.cpp" />
+    <ClCompile Include="src\Mechanisms\NtQueryInformationProcessMechanisms.cpp" />
     <ClCompile Include="src\Mechanisms\NtQuerySystemInformationMechanisms.cpp" />
     <ClCompile Include="src\Mechanisms\NtSetInformationProcessMechanisms.cpp" />
     <ClCompile Include="src\Mechanisms\PebMechanisms.cpp" />
