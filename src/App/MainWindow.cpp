@@ -5,6 +5,7 @@
 #include <CommCtrl.h>
 #include <Uxtheme.h>
 
+#include <algorithm>
 #include <cstring>
 #include <exception>
 #include <string>
@@ -26,8 +27,11 @@ constexpr int kMinWindowWidth = 1060;
 constexpr int kMinWindowHeight = 360;
 
 constexpr int kActionWidth = 92;
-constexpr int kNameWidth = 250;
-constexpr int kCategoryWidth = 92;
+constexpr int kNameMinWidth = 170;
+constexpr int kNameMaxWidth = 320;
+constexpr int kCategoryMinWidth = 96;
+constexpr int kCategoryMaxWidth = 260;
+constexpr int kMeasuredColumnPadding = 22;
 constexpr int kModeWidth = 72;
 constexpr int kStatusWidth = 174;
 constexpr int kLastCheckedWidth = 92;
@@ -86,7 +90,7 @@ HWND CreateStaticLabel(HWND parent, HINSTANCE instance, const wchar_t* text) {
         0,
         L"STATIC",
         text,
-        WS_CHILD | WS_VISIBLE | SS_LEFT | SS_CENTERIMAGE | SS_NOPREFIX,
+        WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | SS_LEFT | SS_CENTERIMAGE | SS_NOPREFIX | SS_ENDELLIPSIS,
         0,
         0,
         0,
@@ -211,7 +215,7 @@ LRESULT MainWindow::HandleMessage(UINT message, WPARAM wparam, LPARAM lparam) {
 
     case WM_SIZE:
         LayoutControls(LOWORD(lparam), HIWORD(lparam));
-        InvalidateRect(window_, nullptr, TRUE);
+        RedrawWindow(window_, nullptr, nullptr, RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_ERASE);
         return 0;
 
     case WM_GETMINMAXINFO: {
@@ -315,7 +319,7 @@ void MainWindow::CreateControls() {
         0,
         L"BUTTON",
         L"Clear results",
-        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+        WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | BS_PUSHBUTTON,
         0,
         0,
         0,
@@ -383,7 +387,7 @@ void MainWindow::CreateMechanismRow(size_t index) {
             0,
             L"BUTTON",
             L"Live",
-            WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+            WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | BS_AUTOCHECKBOX,
             0,
             0,
             0,
@@ -398,7 +402,7 @@ void MainWindow::CreateMechanismRow(size_t index) {
             0,
             L"BUTTON",
             L"Check",
-            WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+            WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | BS_PUSHBUTTON,
             0,
             0,
             0,
@@ -453,44 +457,109 @@ void MainWindow::LayoutControls(int width, int height) {
 }
 
 void MainWindow::LayoutHeader(int y, int width) {
+    const ColumnLayout columns = ComputeColumnLayout(width);
     int x = kOuterMargin;
-    const int details_width = width - kActionWidth - kNameWidth - kCategoryWidth - kModeWidth -
-        kStatusWidth - kLastCheckedWidth - (kColumnGap * 6);
 
     MoveWindow(header_action_label_, x, y, kActionWidth, kHeaderHeight, TRUE);
     x += kActionWidth + kColumnGap;
-    MoveWindow(header_name_label_, x, y, kNameWidth, kHeaderHeight, TRUE);
-    x += kNameWidth + kColumnGap;
-    MoveWindow(header_category_label_, x, y, kCategoryWidth, kHeaderHeight, TRUE);
-    x += kCategoryWidth + kColumnGap;
+    MoveWindow(header_name_label_, x, y, columns.name_width, kHeaderHeight, TRUE);
+    x += columns.name_width + kColumnGap;
+    MoveWindow(header_category_label_, x, y, columns.category_width, kHeaderHeight, TRUE);
+    x += columns.category_width + kColumnGap;
     MoveWindow(header_mode_label_, x, y, kModeWidth, kHeaderHeight, TRUE);
     x += kModeWidth + kColumnGap;
     MoveWindow(header_status_label_, x, y, kStatusWidth, kHeaderHeight, TRUE);
     x += kStatusWidth + kColumnGap;
-    MoveWindow(header_details_label_, x, y, details_width > kMinDetailsWidth ? details_width : kMinDetailsWidth, kHeaderHeight, TRUE);
-    x += (details_width > kMinDetailsWidth ? details_width : kMinDetailsWidth) + kColumnGap;
+    MoveWindow(header_details_label_, x, y, columns.details_width, kHeaderHeight, TRUE);
+    x += columns.details_width + kColumnGap;
     MoveWindow(header_last_checked_label_, x, y, kLastCheckedWidth, kHeaderHeight, TRUE);
 }
 
 void MainWindow::LayoutRow(size_t index, int y, int width) {
+    const ColumnLayout columns = ComputeColumnLayout(width);
     MechanismRow& row = mechanisms_.at(index);
     int x = kOuterMargin;
-    const int details_width = width - kActionWidth - kNameWidth - kCategoryWidth - kModeWidth -
-        kStatusWidth - kLastCheckedWidth - (kColumnGap * 6);
 
     MoveWindow(row.action_control, x, y + 4, kActionWidth, kButtonHeight, TRUE);
     x += kActionWidth + kColumnGap;
-    MoveWindow(row.name_label, x, y, kNameWidth, kRowHeight, TRUE);
-    x += kNameWidth + kColumnGap;
-    MoveWindow(row.category_label, x, y, kCategoryWidth, kRowHeight, TRUE);
-    x += kCategoryWidth + kColumnGap;
+    MoveWindow(row.name_label, x, y, columns.name_width, kRowHeight, TRUE);
+    x += columns.name_width + kColumnGap;
+    MoveWindow(row.category_label, x, y, columns.category_width, kRowHeight, TRUE);
+    x += columns.category_width + kColumnGap;
     MoveWindow(row.mode_label, x, y, kModeWidth, kRowHeight, TRUE);
     x += kModeWidth + kColumnGap;
     MoveWindow(row.status_label, x, y, kStatusWidth, kRowHeight, TRUE);
     x += kStatusWidth + kColumnGap;
-    MoveWindow(row.detail_label, x, y, details_width > kMinDetailsWidth ? details_width : kMinDetailsWidth, kRowHeight, TRUE);
-    x += (details_width > kMinDetailsWidth ? details_width : kMinDetailsWidth) + kColumnGap;
+    MoveWindow(row.detail_label, x, y, columns.details_width, kRowHeight, TRUE);
+    x += columns.details_width + kColumnGap;
     MoveWindow(row.last_checked_label, x, y, kLastCheckedWidth, kRowHeight, TRUE);
+}
+
+MainWindow::ColumnLayout MainWindow::ComputeColumnLayout(int width) const {
+    int measured_name_width = MeasureTextWidth(header_font_, L"Mechanism");
+    int measured_category_width = MeasureTextWidth(header_font_, L"Category");
+
+    for (const MechanismRow& row : mechanisms_) {
+        measured_name_width = (std::max)(
+            measured_name_width,
+            MeasureTextWidth(ui_font_, row.mechanism->Name()));
+        measured_category_width = (std::max)(
+            measured_category_width,
+            MeasureTextWidth(ui_font_, row.mechanism->Category()));
+    }
+
+    ColumnLayout columns;
+    columns.name_width = std::clamp(
+        measured_name_width + kMeasuredColumnPadding,
+        kNameMinWidth,
+        kNameMaxWidth);
+    columns.category_width = std::clamp(
+        measured_category_width + kMeasuredColumnPadding,
+        kCategoryMinWidth,
+        kCategoryMaxWidth);
+
+    const int fixed_width = kActionWidth + kModeWidth + kStatusWidth +
+        kLastCheckedWidth + (kColumnGap * 6);
+    const int available_for_variable_columns = width - fixed_width;
+    const int maximum_name_and_category_width =
+        available_for_variable_columns - kMinDetailsWidth;
+
+    int excess_width = columns.name_width + columns.category_width - maximum_name_and_category_width;
+    if (excess_width > 0) {
+        const int name_reduction = (std::min)(columns.name_width - kNameMinWidth, excess_width);
+        columns.name_width -= name_reduction;
+        excess_width -= name_reduction;
+    }
+
+    if (excess_width > 0) {
+        const int category_reduction = (std::min)(columns.category_width - kCategoryMinWidth, excess_width);
+        columns.category_width -= category_reduction;
+    }
+
+    columns.details_width = available_for_variable_columns - columns.name_width - columns.category_width;
+    columns.details_width = (std::max)(20, columns.details_width);
+    return columns;
+}
+
+int MainWindow::MeasureTextWidth(HFONT font, std::wstring_view text) const {
+    if (window_ == nullptr || text.empty()) {
+        return 0;
+    }
+
+    HDC dc = GetDC(window_);
+    HFONT previous_font = nullptr;
+    if (font != nullptr) {
+        previous_font = reinterpret_cast<HFONT>(SelectObject(dc, font));
+    }
+
+    SIZE size = {};
+    GetTextExtentPoint32W(dc, text.data(), static_cast<int>(text.size()), &size);
+
+    if (previous_font != nullptr) {
+        SelectObject(dc, previous_font);
+    }
+    ReleaseDC(window_, dc);
+    return size.cx;
 }
 
 void MainWindow::RefreshMechanismRow(size_t index) {

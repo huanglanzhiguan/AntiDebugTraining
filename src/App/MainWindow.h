@@ -17,6 +17,12 @@ public:
     int RunMessageLoop();
 
 private:
+    struct ColumnLayout {
+        int name_width = 0;
+        int category_width = 0;
+        int details_width = 0;
+    };
+
     struct MechanismRow {
         std::unique_ptr<IAntiDebugMechanism> mechanism;
         MechanismResult result = MechanismResult::NotRun();
@@ -42,6 +48,8 @@ private:
     void LayoutControls(int width, int height);
     void LayoutHeader(int y, int width);
     void LayoutRow(size_t index, int y, int width);
+    ColumnLayout ComputeColumnLayout(int width) const;
+    int MeasureTextWidth(HFONT font, std::wstring_view text) const;
     void RefreshMechanismRow(size_t index);
     void RunLiveMechanisms();
     void RunMechanism(size_t index, ExecutionMode mode);
