@@ -50,6 +50,9 @@
     <ClInclude Include="src\Mechanisms\FrameworkTriggerSelfTestMechanism.h">
       <Filter>Header Files\Mechanisms</Filter>
     </ClInclude>
+    <ClInclude Include="src\Mechanisms\PebMechanisms.h">
+      <Filter>Header Files\Mechanisms</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\App\MainWindow.cpp">
@@ -65,6 +68,9 @@
       <Filter>Source Files\Mechanisms</Filter>
     </ClCompile>
     <ClCompile Include="src\Mechanisms\FrameworkTriggerSelfTestMechanism.cpp">
+      <Filter>Source Files\Mechanisms</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Mechanisms\PebMechanisms.cpp">
       <Filter>Source Files\Mechanisms</Filter>
     </ClCompile>
   </ItemGroup>

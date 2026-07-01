@@ -22,14 +22,20 @@ constexpr int kButtonHeight = 30;
 constexpr int kHeaderHeight = 24;
 constexpr int kRowHeight = 36;
 constexpr int kStatusHeight = 24;
+constexpr int kMinWindowWidth = 1060;
+constexpr int kMinWindowHeight = 360;
 
 constexpr int kActionWidth = 92;
-constexpr int kNameWidth = 230;
-constexpr int kCategoryWidth = 120;
-constexpr int kModeWidth = 82;
-constexpr int kStatusWidth = 132;
-constexpr int kLastCheckedWidth = 98;
+constexpr int kNameWidth = 250;
+constexpr int kCategoryWidth = 92;
+constexpr int kModeWidth = 72;
+constexpr int kStatusWidth = 174;
+constexpr int kLastCheckedWidth = 92;
+constexpr int kMinDetailsWidth = 180;
 constexpr int kColumnGap = 8;
+constexpr COLORREF kDefaultTextColor = RGB(32, 32, 32);
+constexpr COLORREF kCleanTextColor = RGB(18, 128, 75);
+constexpr COLORREF kDetectedTextColor = RGB(190, 32, 38);
 
 std::wstring Copy(std::wstring_view value) {
     return std::wstring(value.data(), value.size());
@@ -91,6 +97,14 @@ HWND CreateStaticLabel(HWND parent, HINSTANCE instance, const wchar_t* text) {
         nullptr);
 }
 
+std::wstring WindowText(HWND control) {
+    const int length = GetWindowTextLengthW(control);
+    std::wstring text(static_cast<std::size_t>(length + 1), L'\0');
+    GetWindowTextW(control, text.data(), length + 1);
+    text.resize(static_cast<std::size_t>(length));
+    return text;
+}
+
 }  // namespace
 
 namespace adt {
@@ -125,7 +139,7 @@ bool MainWindow::Create(int show_command) {
         WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
-        980,
+        1100,
         520,
         nullptr,
         nullptr,
@@ -183,6 +197,13 @@ LRESULT MainWindow::HandleMessage(UINT message, WPARAM wparam, LPARAM lparam) {
         InvalidateRect(window_, nullptr, TRUE);
         return 0;
 
+    case WM_GETMINMAXINFO: {
+        auto* min_max = reinterpret_cast<MINMAXINFO*>(lparam);
+        min_max->ptMinTrackSize.x = kMinWindowWidth;
+        min_max->ptMinTrackSize.y = kMinWindowHeight;
+        return 0;
+    }
+
     case WM_COMMAND: {
         const WORD control_id = LOWORD(wparam);
         size_t row_index = 0;
@@ -222,7 +243,7 @@ LRESULT MainWindow::HandleMessage(UINT message, WPARAM wparam, LPARAM lparam) {
     case WM_CTLCOLORSTATIC: {
         HDC dc = reinterpret_cast<HDC>(wparam);
         SetBkColor(dc, RGB(250, 250, 250));
-        SetTextColor(dc, RGB(32, 32, 32));
+        SetTextColor(dc, TextColorForStatic(reinterpret_cast<HWND>(lparam)));
         return reinterpret_cast<LRESULT>(window_brush_);
     }
 
@@ -243,6 +264,10 @@ LRESULT MainWindow::HandleMessage(UINT message, WPARAM wparam, LPARAM lparam) {
             DeleteObject(header_font_);
             header_font_ = nullptr;
         }
+        if (status_font_ != nullptr) {
+            DeleteObject(status_font_);
+            status_font_ = nullptr;
+        }
         if (window_brush_ != nullptr) {
             DeleteObject(window_brush_);
             window_brush_ = nullptr;
@@ -261,6 +286,7 @@ void MainWindow::CreateControls() {
     window_brush_ = CreateSolidBrush(RGB(250, 250, 250));
     ui_font_ = CreateUIFont(window_, 9, FW_NORMAL);
     header_font_ = CreateUIFont(window_, 9, FW_SEMIBOLD);
+    status_font_ = CreateUIFont(window_, 9, FW_BOLD);
 
     hint_label_ = CreateStaticLabel(
         window_,
@@ -424,8 +450,8 @@ void MainWindow::LayoutHeader(int y, int width) {
     x += kModeWidth + kColumnGap;
     MoveWindow(header_status_label_, x, y, kStatusWidth, kHeaderHeight, TRUE);
     x += kStatusWidth + kColumnGap;
-    MoveWindow(header_details_label_, x, y, details_width > 120 ? details_width : 120, kHeaderHeight, TRUE);
-    x += (details_width > 120 ? details_width : 120) + kColumnGap;
+    MoveWindow(header_details_label_, x, y, details_width > kMinDetailsWidth ? details_width : kMinDetailsWidth, kHeaderHeight, TRUE);
+    x += (details_width > kMinDetailsWidth ? details_width : kMinDetailsWidth) + kColumnGap;
     MoveWindow(header_last_checked_label_, x, y, kLastCheckedWidth, kHeaderHeight, TRUE);
 }
 
@@ -445,8 +471,8 @@ void MainWindow::LayoutRow(size_t index, int y, int width) {
     x += kModeWidth + kColumnGap;
     MoveWindow(row.status_label, x, y, kStatusWidth, kRowHeight, TRUE);
     x += kStatusWidth + kColumnGap;
-    MoveWindow(row.detail_label, x, y, details_width > 120 ? details_width : 120, kRowHeight, TRUE);
-    x += (details_width > 120 ? details_width : 120) + kColumnGap;
+    MoveWindow(row.detail_label, x, y, details_width > kMinDetailsWidth ? details_width : kMinDetailsWidth, kRowHeight, TRUE);
+    x += (details_width > kMinDetailsWidth ? details_width : kMinDetailsWidth) + kColumnGap;
     MoveWindow(row.last_checked_label, x, y, kLastCheckedWidth, kRowHeight, TRUE);
 }
 
@@ -459,6 +485,10 @@ void MainWindow::RefreshMechanismRow(size_t index) {
     SetWindowTextW(row.status_label, ToDisplayText(row.result.state));
     SetWindowTextW(row.detail_label, row.result.detail.c_str());
     SetWindowTextW(row.last_checked_label, row.last_checked.c_str());
+
+    const HFONT status_font = row.result.state == DetectionState::DebuggerDetected ? status_font_ : ui_font_;
+    SendMessageW(row.status_label, WM_SETFONT, reinterpret_cast<WPARAM>(status_font), TRUE);
+    InvalidateRect(row.status_label, nullptr, TRUE);
 }
 
 void MainWindow::RunLiveMechanisms() {
@@ -538,6 +568,40 @@ void MainWindow::ClearResults() {
 
 void MainWindow::SetStatusText(const std::wstring& text) {
     SetWindowTextW(status_label_, text.c_str());
+    const HFONT status_font = text == L"debugger detected" ? status_font_ : ui_font_;
+    SendMessageW(status_label_, WM_SETFONT, reinterpret_cast<WPARAM>(status_font), TRUE);
+    InvalidateRect(status_label_, nullptr, TRUE);
+}
+
+COLORREF MainWindow::TextColorForStatic(HWND control) const {
+    for (const MechanismRow& row : mechanisms_) {
+        if (row.status_label != control) {
+            continue;
+        }
+
+        if (row.result.state == DetectionState::DebuggerDetected) {
+            return kDetectedTextColor;
+        }
+
+        if (row.result.state == DetectionState::Clean) {
+            return kCleanTextColor;
+        }
+
+        return kDefaultTextColor;
+    }
+
+    if (control == status_label_) {
+        const std::wstring text = WindowText(control);
+        if (text == L"debugger detected") {
+            return kDetectedTextColor;
+        }
+
+        if (text == L"clean") {
+            return kCleanTextColor;
+        }
+    }
+
+    return kDefaultTextColor;
 }
 
 void MainWindow::ApplyUIFont(HWND control) {

@@ -47,6 +47,7 @@ private:
     void RunMechanism(size_t index, ExecutionMode mode);
     void ClearResults();
     void SetStatusText(const std::wstring& text);
+    COLORREF TextColorForStatic(HWND control) const;
     void ApplyUIFont(HWND control);
     void ApplyHeaderFont(HWND control);
     bool IsLiveMechanism(size_t index) const;
@@ -67,10 +68,10 @@ private:
     HWND status_label_ = nullptr;
     HFONT ui_font_ = nullptr;
     HFONT header_font_ = nullptr;
+    HFONT status_font_ = nullptr;
     HBRUSH window_brush_ = nullptr;
     bool is_running_ = false;
     std::vector<MechanismRow> mechanisms_;
 };
 
 }  // namespace adt
-
