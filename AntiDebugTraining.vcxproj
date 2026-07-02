@@ -89,6 +89,7 @@
     <ClInclude Include="src\Core\IAntiDebugMechanism.h" />
     <ClInclude Include="src\Mechanisms\FrameworkSelfTestMechanism.h" />
     <ClInclude Include="src\Mechanisms\FrameworkTriggerSelfTestMechanism.h" />
+    <ClInclude Include="src\Mechanisms\HardwareBreakpointMechanisms.h" />
     <ClInclude Include="src\Mechanisms\NtCloseMechanisms.h" />
     <ClInclude Include="src\Mechanisms\NtQueryInformationProcessMechanisms.h" />
     <ClInclude Include="src\Mechanisms\NtQueryObjectMechanisms.h" />
@@ -106,6 +107,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Mechanisms\FrameworkSelfTestMechanism.cpp" />
     <ClCompile Include="src\Mechanisms\FrameworkTriggerSelfTestMechanism.cpp" />
+    <ClCompile Include="src\Mechanisms\HardwareBreakpointMechanisms.cpp" />
     <ClCompile Include="src\Mechanisms\NtCloseMechanisms.cpp" />
     <ClCompile Include="src\Mechanisms\NtQueryInformationProcessMechanisms.cpp" />
     <ClCompile Include="src\Mechanisms\NtQueryObjectMechanisms.cpp" />
