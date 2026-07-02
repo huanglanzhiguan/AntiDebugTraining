@@ -62,10 +62,16 @@
     <ClInclude Include="src\Mechanisms\NtSetInformationProcessMechanisms.h">
       <Filter>Header Files\Mechanisms</Filter>
     </ClInclude>
+    <ClInclude Include="src\Mechanisms\NtUserBuildHwndListMechanisms.h">
+      <Filter>Header Files\Mechanisms</Filter>
+    </ClInclude>
     <ClInclude Include="src\Mechanisms\NtUserFindWindowExMechanisms.h">
       <Filter>Header Files\Mechanisms</Filter>
     </ClInclude>
     <ClInclude Include="src\Mechanisms\PebMechanisms.h">
+      <Filter>Header Files\Mechanisms</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Mechanisms\WindowProbeList.h">
       <Filter>Header Files\Mechanisms</Filter>
     </ClInclude>
   </ItemGroup>
@@ -95,6 +101,9 @@
       <Filter>Source Files\Mechanisms</Filter>
     </ClCompile>
     <ClCompile Include="src\Mechanisms\NtSetInformationProcessMechanisms.cpp">
+      <Filter>Source Files\Mechanisms</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Mechanisms\NtUserBuildHwndListMechanisms.cpp">
       <Filter>Source Files\Mechanisms</Filter>
     </ClCompile>
     <ClCompile Include="src\Mechanisms\NtUserFindWindowExMechanisms.cpp">
