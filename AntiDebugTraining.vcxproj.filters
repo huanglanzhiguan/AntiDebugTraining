@@ -68,6 +68,9 @@
     <ClInclude Include="src\Mechanisms\NtUserFindWindowExMechanisms.h">
       <Filter>Header Files\Mechanisms</Filter>
     </ClInclude>
+    <ClInclude Include="src\Mechanisms\NtUserQueryWindowMechanisms.h">
+      <Filter>Header Files\Mechanisms</Filter>
+    </ClInclude>
     <ClInclude Include="src\Mechanisms\PebMechanisms.h">
       <Filter>Header Files\Mechanisms</Filter>
     </ClInclude>
@@ -107,6 +110,9 @@
       <Filter>Source Files\Mechanisms</Filter>
     </ClCompile>
     <ClCompile Include="src\Mechanisms\NtUserFindWindowExMechanisms.cpp">
+      <Filter>Source Files\Mechanisms</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Mechanisms\NtUserQueryWindowMechanisms.cpp">
       <Filter>Source Files\Mechanisms</Filter>
     </ClCompile>
     <ClCompile Include="src\Mechanisms\PebMechanisms.cpp">

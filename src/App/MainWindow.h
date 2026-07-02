@@ -48,6 +48,11 @@ private:
     void LayoutControls(int width, int height);
     void LayoutHeader(int y, int width);
     void LayoutRow(size_t index, int y, int width);
+    void UpdateVerticalScroll(int height);
+    void SetFirstVisibleRow(int row_index);
+    int VisibleRowCapacity(int height) const;
+    int MaximumFirstVisibleRow(int height) const;
+    void SetMechanismRowVisible(size_t index, bool visible);
     ColumnLayout ComputeColumnLayout(int width) const;
     int MeasureTextWidth(HFONT font, std::wstring_view text) const;
     void RefreshMechanismRow(size_t index);
@@ -79,6 +84,8 @@ private:
     HFONT status_font_ = nullptr;
     HBRUSH window_brush_ = nullptr;
     bool is_running_ = false;
+    int first_visible_row_ = 0;
+    int visible_row_capacity_ = 1;
     std::vector<MechanismRow> mechanisms_;
 };
 

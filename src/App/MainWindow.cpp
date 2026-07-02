@@ -25,6 +25,8 @@ constexpr int kRowHeight = 36;
 constexpr int kStatusHeight = 24;
 constexpr int kMinWindowWidth = 1060;
 constexpr int kMinWindowHeight = 360;
+constexpr int kRowsStatusGap = 8;
+constexpr int kMouseWheelRows = 3;
 
 constexpr int kActionWidth = 92;
 constexpr int kNameMinWidth = 170;
@@ -83,6 +85,61 @@ std::wstring CurrentTimeText() {
 std::wstring ExceptionText(const std::exception& error) {
     const char* what = error.what();
     return std::wstring(what, what + std::strlen(what));
+}
+
+std::wstring CompactPath(std::wstring path) {
+    std::replace(path.begin(), path.end(), L'/', L'\\');
+
+    std::size_t slash = path.size();
+    for (int i = 0; i < 3 && slash != std::wstring::npos; ++i) {
+        slash = path.rfind(L'\\', slash == path.size() ? slash : slash - 1);
+    }
+
+    if (slash == std::wstring::npos) {
+        return path;
+    }
+
+    return path.substr(slash + 1);
+}
+
+std::wstring FileTimeText(const FILETIME& file_time) {
+    FILETIME local_file_time = {};
+    SYSTEMTIME local_time = {};
+    if (!FileTimeToLocalFileTime(&file_time, &local_file_time) ||
+        !FileTimeToSystemTime(&local_file_time, &local_time)) {
+        return L"unknown time";
+    }
+
+    wchar_t buffer[32] = {};
+    swprintf_s(
+        buffer,
+        L"%04u-%02u-%02u %02u:%02u:%02u",
+        local_time.wYear,
+        local_time.wMonth,
+        local_time.wDay,
+        local_time.wHour,
+        local_time.wMinute,
+        local_time.wSecond);
+    return buffer;
+}
+
+std::wstring RuntimeIdentityText() {
+    wchar_t module_path_buffer[MAX_PATH] = {};
+    const DWORD length = GetModuleFileNameW(nullptr, module_path_buffer, static_cast<DWORD>(std::size(module_path_buffer)));
+    if (length == 0) {
+        return L"running binary unknown";
+    }
+
+    const std::wstring module_path(module_path_buffer, module_path_buffer + length);
+    WIN32_FILE_ATTRIBUTE_DATA attributes = {};
+    const std::wstring written_time = GetFileAttributesExW(
+        module_path.c_str(),
+        GetFileExInfoStandard,
+        &attributes)
+        ? FileTimeText(attributes.ftLastWriteTime)
+        : L"unknown time";
+
+    return CompactPath(module_path) + L", written " + written_time;
 }
 
 HWND CreateStaticLabel(HWND parent, HINSTANCE instance, const wchar_t* text) {
@@ -157,7 +214,7 @@ bool MainWindow::Create(int show_command) {
         0,
         class_name,
         L"AntiDebugTraining",
-        WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
+        WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_VSCROLL,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
         1100,
@@ -217,6 +274,57 @@ LRESULT MainWindow::HandleMessage(UINT message, WPARAM wparam, LPARAM lparam) {
         LayoutControls(LOWORD(lparam), HIWORD(lparam));
         RedrawWindow(window_, nullptr, nullptr, RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_ERASE);
         return 0;
+
+    case WM_VSCROLL: {
+        SCROLLINFO scroll = {};
+        scroll.cbSize = sizeof(scroll);
+        scroll.fMask = SIF_ALL;
+        GetScrollInfo(window_, SB_VERT, &scroll);
+
+        int next_row = first_visible_row_;
+        switch (LOWORD(wparam)) {
+        case SB_LINEUP:
+            next_row -= 1;
+            break;
+        case SB_LINEDOWN:
+            next_row += 1;
+            break;
+        case SB_PAGEUP:
+            next_row -= visible_row_capacity_;
+            break;
+        case SB_PAGEDOWN:
+            next_row += visible_row_capacity_;
+            break;
+        case SB_THUMBPOSITION:
+        case SB_THUMBTRACK:
+            next_row = scroll.nTrackPos;
+            break;
+        case SB_TOP:
+            next_row = 0;
+            break;
+        case SB_BOTTOM: {
+            RECT client = {};
+            GetClientRect(window_, &client);
+            next_row = MaximumFirstVisibleRow(client.bottom - client.top);
+            break;
+        }
+        default:
+            return 0;
+        }
+
+        SetFirstVisibleRow(next_row);
+        return 0;
+    }
+
+    case WM_MOUSEWHEEL: {
+        const int wheel_delta = GET_WHEEL_DELTA_WPARAM(wparam);
+        if (wheel_delta > 0) {
+            SetFirstVisibleRow(first_visible_row_ - kMouseWheelRows);
+        } else if (wheel_delta < 0) {
+            SetFirstVisibleRow(first_visible_row_ + kMouseWheelRows);
+        }
+        return 0;
+    }
 
     case WM_GETMINMAXINFO: {
         auto* min_max = reinterpret_cast<MINMAXINFO*>(lparam);
@@ -312,7 +420,8 @@ void MainWindow::CreateControls() {
     hint_label_ = CreateStaticLabel(
         window_,
         instance_,
-        L"Live rows poll while checked. Trigger rows run with their Check button.");
+        (L"Live rows poll while checked. Trigger rows run with their Check button. Running " +
+            RuntimeIdentityText()).c_str());
     ApplyUIFont(hint_label_);
 
     clear_button_ = CreateWindowExW(
@@ -435,6 +544,7 @@ void MainWindow::LayoutControls(int width, int height) {
     const int content_width = width - (kOuterMargin * 2);
     const int top = kOuterMargin;
     const int hint_width = content_width > 130 ? content_width - 130 : content_width;
+    UpdateVerticalScroll(height);
 
     MoveWindow(hint_label_, kOuterMargin, top, hint_width > 20 ? hint_width : 20, kHintHeight, TRUE);
     MoveWindow(clear_button_, width - kOuterMargin - 116, top, 116, kButtonHeight, TRUE);
@@ -443,8 +553,16 @@ void MainWindow::LayoutControls(int width, int height) {
     LayoutHeader(header_y, content_width);
 
     const int first_row_y = header_y + kHeaderHeight + 4;
+    const int rows_bottom = height - kOuterMargin - kStatusHeight - kRowsStatusGap;
     for (size_t i = 0; i < mechanisms_.size(); ++i) {
-        LayoutRow(i, first_row_y + static_cast<int>(i) * kRowHeight, content_width);
+        const int visible_index = static_cast<int>(i) - first_visible_row_;
+        const int row_y = first_row_y + visible_index * kRowHeight;
+        const bool visible = visible_index >= 0 && row_y + kRowHeight <= rows_bottom;
+
+        SetMechanismRowVisible(i, visible);
+        if (visible) {
+            LayoutRow(i, row_y, content_width);
+        }
     }
 
     MoveWindow(
@@ -493,6 +611,74 @@ void MainWindow::LayoutRow(size_t index, int y, int width) {
     MoveWindow(row.detail_label, x, y, columns.details_width, kRowHeight, TRUE);
     x += columns.details_width + kColumnGap;
     MoveWindow(row.last_checked_label, x, y, kLastCheckedWidth, kRowHeight, TRUE);
+}
+
+void MainWindow::UpdateVerticalScroll(int height) {
+    visible_row_capacity_ = VisibleRowCapacity(height);
+
+    const int maximum_first_visible_row = MaximumFirstVisibleRow(height);
+    first_visible_row_ = std::clamp(first_visible_row_, 0, maximum_first_visible_row);
+
+    SCROLLINFO scroll = {};
+    scroll.cbSize = sizeof(scroll);
+    scroll.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
+    scroll.nMin = 0;
+    scroll.nMax = mechanisms_.empty() ? 0 : static_cast<int>(mechanisms_.size()) - 1;
+    scroll.nPage = static_cast<UINT>(visible_row_capacity_);
+    scroll.nPos = first_visible_row_;
+    SetScrollInfo(window_, SB_VERT, &scroll, TRUE);
+    ShowScrollBar(window_, SB_VERT, mechanisms_.size() > static_cast<size_t>(visible_row_capacity_));
+}
+
+void MainWindow::SetFirstVisibleRow(int row_index) {
+    RECT client = {};
+    GetClientRect(window_, &client);
+
+    const int next_row = std::clamp(
+        row_index,
+        0,
+        MaximumFirstVisibleRow(client.bottom - client.top));
+
+    if (next_row == first_visible_row_) {
+        return;
+    }
+
+    first_visible_row_ = next_row;
+
+    SCROLLINFO scroll = {};
+    scroll.cbSize = sizeof(scroll);
+    scroll.fMask = SIF_POS;
+    scroll.nPos = first_visible_row_;
+    SetScrollInfo(window_, SB_VERT, &scroll, TRUE);
+
+    LayoutControls(client.right - client.left, client.bottom - client.top);
+    RedrawWindow(window_, nullptr, nullptr, RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_ERASE);
+}
+
+int MainWindow::VisibleRowCapacity(int height) const {
+    const int header_y = kOuterMargin + kHintHeight + 12;
+    const int first_row_y = header_y + kHeaderHeight + 4;
+    const int rows_bottom = height - kOuterMargin - kStatusHeight - kRowsStatusGap;
+    const int rows_height = rows_bottom - first_row_y;
+    return (std::max)(1, rows_height / kRowHeight);
+}
+
+int MainWindow::MaximumFirstVisibleRow(int height) const {
+    const int row_count = static_cast<int>(mechanisms_.size());
+    return (std::max)(0, row_count - VisibleRowCapacity(height));
+}
+
+void MainWindow::SetMechanismRowVisible(size_t index, bool visible) {
+    MechanismRow& row = mechanisms_.at(index);
+    const int show_command = visible ? SW_SHOWNA : SW_HIDE;
+
+    ShowWindow(row.action_control, show_command);
+    ShowWindow(row.name_label, show_command);
+    ShowWindow(row.category_label, show_command);
+    ShowWindow(row.mode_label, show_command);
+    ShowWindow(row.status_label, show_command);
+    ShowWindow(row.detail_label, show_command);
+    ShowWindow(row.last_checked_label, show_command);
 }
 
 MainWindow::ColumnLayout MainWindow::ComputeColumnLayout(int width) const {
