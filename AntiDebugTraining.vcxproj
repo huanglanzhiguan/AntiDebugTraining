@@ -93,6 +93,7 @@
     <ClInclude Include="src\Mechanisms\NtQueryObjectMechanisms.h" />
     <ClInclude Include="src\Mechanisms\NtQuerySystemInformationMechanisms.h" />
     <ClInclude Include="src\Mechanisms\NtSetInformationProcessMechanisms.h" />
+    <ClInclude Include="src\Mechanisms\NtUserFindWindowExMechanisms.h" />
     <ClInclude Include="src\Mechanisms\PebMechanisms.h" />
   </ItemGroup>
   <ItemGroup>
@@ -105,6 +106,7 @@
     <ClCompile Include="src\Mechanisms\NtQueryObjectMechanisms.cpp" />
     <ClCompile Include="src\Mechanisms\NtQuerySystemInformationMechanisms.cpp" />
     <ClCompile Include="src\Mechanisms\NtSetInformationProcessMechanisms.cpp" />
+    <ClCompile Include="src\Mechanisms\NtUserFindWindowExMechanisms.cpp" />
     <ClCompile Include="src\Mechanisms\PebMechanisms.cpp" />
   </ItemGroup>
   <ItemGroup>
