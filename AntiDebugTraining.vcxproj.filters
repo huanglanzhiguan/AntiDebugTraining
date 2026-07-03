@@ -83,6 +83,9 @@
     <ClInclude Include="src\Mechanisms\RaiseExceptionMechanisms.h">
       <Filter>Header Files\Mechanisms</Filter>
     </ClInclude>
+    <ClInclude Include="src\Mechanisms\RtlDebugApiMechanisms.h">
+      <Filter>Header Files\Mechanisms</Filter>
+    </ClInclude>
     <ClInclude Include="src\Mechanisms\WindowProbeList.h">
       <Filter>Header Files\Mechanisms</Filter>
     </ClInclude>
@@ -134,6 +137,9 @@
       <Filter>Source Files\Mechanisms</Filter>
     </ClCompile>
     <ClCompile Include="src\Mechanisms\RaiseExceptionMechanisms.cpp">
+      <Filter>Source Files\Mechanisms</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Mechanisms\RtlDebugApiMechanisms.cpp">
       <Filter>Source Files\Mechanisms</Filter>
     </ClCompile>
   </ItemGroup>

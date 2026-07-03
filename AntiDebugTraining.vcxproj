@@ -100,6 +100,7 @@
     <ClInclude Include="src\Mechanisms\NtUserQueryWindowMechanisms.h" />
     <ClInclude Include="src\Mechanisms\PebMechanisms.h" />
     <ClInclude Include="src\Mechanisms\RaiseExceptionMechanisms.h" />
+    <ClInclude Include="src\Mechanisms\RtlDebugApiMechanisms.h" />
     <ClInclude Include="src\Mechanisms\WindowProbeList.h" />
   </ItemGroup>
   <ItemGroup>
@@ -119,6 +120,7 @@
     <ClCompile Include="src\Mechanisms\NtUserQueryWindowMechanisms.cpp" />
     <ClCompile Include="src\Mechanisms\PebMechanisms.cpp" />
     <ClCompile Include="src\Mechanisms\RaiseExceptionMechanisms.cpp" />
+    <ClCompile Include="src\Mechanisms\RtlDebugApiMechanisms.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="app.manifest" />

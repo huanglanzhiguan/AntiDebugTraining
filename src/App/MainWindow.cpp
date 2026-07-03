@@ -350,10 +350,11 @@ LRESULT MainWindow::HandleMessage(UINT message, WPARAM wparam, LPARAM lparam) {
                     mechanisms_[row_index].result = MechanismResult::NotRun();
                     mechanisms_[row_index].last_checked.clear();
                     RefreshMechanismRow(row_index);
-                    SetStatusText(L"Live row disabled.");
+                    UpdateStatusFromResults();
                 }
             } else {
                 RunMechanism(row_index, ExecutionMode::Manual);
+                UpdateStatusFromResults();
             }
 
             return 0;
@@ -773,33 +774,21 @@ void MainWindow::RunLiveMechanisms() {
     }
 
     is_running_ = true;
-    bool any_enabled = false;
-    bool detected = false;
-    bool any_error = false;
+    bool any_live_enabled = false;
 
     for (size_t i = 0; i < mechanisms_.size(); ++i) {
         if (!IsLiveMechanism(i) || !IsRowChecked(i)) {
             continue;
         }
 
-        any_enabled = true;
+        any_live_enabled = true;
         RunMechanism(i, ExecutionMode::Live);
-
-        if (mechanisms_[i].result.state == DetectionState::DebuggerDetected) {
-            detected = true;
-        } else if (mechanisms_[i].result.state == DetectionState::Error) {
-            any_error = true;
-        }
     }
 
-    if (!any_enabled) {
+    if (!any_live_enabled) {
         SetStatusText(L"No live rows enabled.");
-    } else if (detected) {
-        SetStatusText(L"debugger detected");
-    } else if (any_error) {
-        SetStatusText(L"Completed with errors.");
     } else {
-        SetStatusText(L"clean");
+        UpdateStatusFromResults();
     }
 
     is_running_ = false;
@@ -843,6 +832,40 @@ void MainWindow::SetStatusText(const std::wstring& text) {
     const HFONT status_font = text == L"debugger detected" ? status_font_ : ui_font_;
     SetControlTextIfChanged(status_label_, text);
     SetControlFontIfChanged(status_label_, status_font);
+}
+
+void MainWindow::UpdateStatusFromResults() {
+    if (mechanisms_.empty()) {
+        SetStatusText(L"No mechanisms registered yet.");
+        return;
+    }
+
+    bool any_run = false;
+    bool detected = false;
+    bool any_error = false;
+
+    for (const MechanismRow& row : mechanisms_) {
+        if (row.result.state == DetectionState::NotRun) {
+            continue;
+        }
+
+        any_run = true;
+        if (row.result.state == DetectionState::DebuggerDetected) {
+            detected = true;
+        } else if (row.result.state == DetectionState::Error) {
+            any_error = true;
+        }
+    }
+
+    if (!any_run) {
+        SetStatusText(L"No results yet.");
+    } else if (detected) {
+        SetStatusText(L"debugger detected");
+    } else if (any_error) {
+        SetStatusText(L"Completed with errors.");
+    } else {
+        SetStatusText(L"clean");
+    }
 }
 
 COLORREF MainWindow::TextColorForStatic(HWND control) const {

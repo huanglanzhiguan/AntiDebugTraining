@@ -60,6 +60,7 @@ private:
     void RunMechanism(size_t index, ExecutionMode mode);
     void ClearResults();
     void SetStatusText(const std::wstring& text);
+    void UpdateStatusFromResults();
     COLORREF TextColorForStatic(HWND control) const;
     void ApplyUIFont(HWND control);
     void ApplyHeaderFont(HWND control);
