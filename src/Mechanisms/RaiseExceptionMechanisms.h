@@ -39,4 +39,40 @@ public:
     MechanismResult Run(const MechanismContext& context) override;
 };
 
+// Installs a top-level unhandled exception filter and raises STATUS_BREAKPOINT.
+//
+// What it observes:
+// SetUnhandledExceptionFilter registers a process-wide last-chance filter. This
+// filter is reached only after an exception has not been handled by vectored or
+// frame-based handlers. In a normal non-debugged run, a continuable software
+// breakpoint raised by RaiseException can reach that top-level filter, and the
+// filter can return EXCEPTION_CONTINUE_EXECUTION.
+//
+// Why it matters:
+// A debugger gets first chance at the exception before the application's normal
+// dispatch path. If the debugger consumes the breakpoint, RaiseException returns
+// without the top-level filter running. If Windows' own unhandled-exception path
+// still observes the process as debugged, the custom filter may also be skipped
+// and the exception is routed back to the debugger as a later-chance event.
+//
+// ScyllaHide angle:
+// This is not just a one-API return-value hook. A mitigation has to make the
+// debugger's exception policy and the debugged-state checks line up with what a
+// non-debugged process would see.
+//
+// Teaching note:
+// This row deliberately differs from RaiseExceptionBreakpointMechanism. The
+// RaiseException row asks whether a nearby __except block received the exception;
+// this row asks whether the exception survived to the process-level top filter.
+class UnhandledExceptionFilterBreakpointMechanism final : public IAntiDebugMechanism {
+public:
+    std::wstring_view Id() const noexcept override;
+    std::wstring_view Name() const noexcept override;
+    std::wstring_view Category() const noexcept override;
+    std::wstring_view Description() const noexcept override;
+    bool SupportsLiveMode() const noexcept override;
+
+    MechanismResult Run(const MechanismContext& context) override;
+};
+
 }  // namespace adt
