@@ -1,143 +1,133 @@
 # AntiDebugTraining
 
-AntiDebugTraining is an educational Windows reverse-engineering project for studying anti-debugging and anti-anti-debugging behavior in a controlled local lab.
+AntiDebugTraining is a native Windows C++ training program for learning how common anti-debugging checks observe debugger-visible artifacts.
 
-The first phase follows anti-debugging mechanisms documented by ScyllaHide. For each mechanism, we will build a small, readable demonstration that shows what the program observes, how the result changes under a debugger, and how ScyllaHide affects that observation.
+The project is intentionally educational and non-destructive. It is meant for a controlled local reverse-engineering lab with tools such as Visual Studio, x64dbg, and ScyllaHide.
 
-## Goals
+## What This Project Demonstrates
 
-- Study existing anti-debugging mechanisms described in `ScyllaHide.pdf`.
-- Implement each anti-debugging mechanism as a separate class.
-- Use a plugin-style design so mechanisms can be enabled or disabled independently.
-- Build a UI that shows:
-  - Which mechanisms are enabled.
-  - Which mechanism is currently being tested.
-  - The detection result for each mechanism.
-  - A clear final status such as `debugger detected` or `clean`.
+Anti-debugging is treated as a set of observations, not as a bag of tricks. Each mechanism asks:
 
-## Non-Goals
+1. What is the program observing?
+2. Why is that artifact observable on Windows?
+3. When does the artifact indicate a debugger?
+4. How reliable is the signal?
+5. How can a reverse engineer hide, fake, patch, or avoid the observation?
 
-This project is not intended to create malware, hide from security tools, bypass protections in third-party software, or attack other systems.
+The UI shows each mechanism, its category, whether it is a live or trigger check, the current result, details, and the last check time.
 
-The demos must avoid:
+Result states are deliberately simple:
 
-- Persistence.
-- Privilege escalation.
-- Credential access.
-- Injection into unrelated processes.
-- Network activity.
-- Destructive behavior.
-- Tampering with security products.
+- `debugger detected`
+- `clean`
+- error or not-run states when a check cannot complete
 
-All examples should be safe local demonstrations of debugger-observable Windows artifacts.
+## Scope
 
-## Phase 1: Anti-Debugging Training Program
+This program focuses on safe local detection demos. It does not implement payloads, persistence, injection into unrelated processes, privilege escalation, credential access, network activity, or security-tool tampering.
 
-The first artifact is a Windows program with a UI.
+Some anti-debugging ideas are intentionally left out of this UI because they are destructive, crash-prone, too debugger-workflow-specific, or better taught as standalone lab programs.
 
-The program should contain multiple anti-debugging checks, but each check must be isolated behind a common mechanism interface. This lets students turn techniques on or off and observe each one independently.
+## Building
 
-Expected design direction:
+Open `AntiDebugTraining.sln` in Visual Studio and build the `x64` configuration.
 
-- One class per anti-debugging mechanism.
-- A shared interface for all mechanisms.
-- A registry or plugin manager that discovers available mechanisms.
-- UI controls for enabling and disabling mechanisms.
-- A result panel showing each mechanism's output.
+The project is a Win32 desktop application using C++17.
 
-Example conceptual shape:
+A command-line build can also be run with MSBuild:
 
-```text
-AntiDebugTraining
-  UI
-  Mechanism Manager
-  Mechanism Interface
-  IsDebuggerPresent Check
-  CheckRemoteDebuggerPresent Check
-  NtQueryInformationProcess Check
-  ...
+```powershell
+MSBuild AntiDebugTraining.sln /p:Configuration=Debug /p:Platform=x64 /m
 ```
 
-We will not implement all mechanisms at once. Each mechanism should be added only after studying the corresponding ScyllaHide documentation section.
+## Running The Lab
 
-## Current Scaffold
+Typical workflow:
 
-The initial scaffold is a native Visual Studio C++ Win32 application:
+1. Run the program normally.
+2. Run or attach with x64dbg.
+3. Run or attach with x64dbg and ScyllaHide enabled.
+4. Compare the row details and final status.
+5. Explain which Windows artifact changed, which did not, and why.
 
-- `AntiDebugTraining.sln`
-- `AntiDebugTraining.vcxproj`
+Live rows are polled while enabled. Trigger rows run only when their `Check` button is clicked.
+
+## Implemented Mechanism Areas
+
+The current app includes beginner-friendly checks in these categories:
+
+- PEB and process-heap artifacts
+- `NtSetInformationProcess`
+- `NtQuerySystemInformation`
+- `NtQueryInformationProcess`
+- `NtQueryObject`
+- debugger-related window discovery
+- debugger-window owner process checks
+- `NtClose` invalid-handle exception behavior
+- hardware breakpoint register checks
+- explicit exception-routing checks
+- `UnhandledExceptionFilter`
+- RTL heap debug-information APIs
+
+These mechanisms cover the core beginner lessons:
+
+- Debugger state can appear in user-mode process structures.
+- Native APIs can expose debugger-related process state.
+- Object handles and debug objects leak useful context.
+- Debugger UI/process artifacts can be detected from another process.
+- Exception delivery differs depending on debugger policy.
+- Hardware breakpoints are visible through debug registers unless hidden.
+- Some checks are launch-time artifacts rather than live attach detectors.
+
+## Important Testing Notes
+
+Not every check should turn red when a debugger attaches later.
+
+For example, PEB heap flags and RTL heap debug-information checks are mostly launch-time or debug-heap artifacts. They may stay clean when x64dbg attaches to an already-running process, but turn red when the process is launched under a debugger or diagnostic heap configuration.
+
+Window-based checks may detect an open debugger even if the debugger has not attached yet, unless ScyllaHide is injected into the target and configured to hide those windows.
+
+Exception-based checks depend heavily on debugger exception policy. In x64dbg, pass/swallow behavior can change whether the program's handler sees an exception.
+
+## Architecture
+
+Each anti-debugging technique is implemented as a class behind a shared mechanism interface:
+
 - `src/Core/IAntiDebugMechanism.h`
 - `src/Core/MechanismRegistry.h`
 - `src/App/MainWindow.h`
+- `src/Mechanisms/*`
 
-The UI currently shows registered mechanisms in a table. Each mechanism has exactly one execution mode:
+Each mechanism provides:
 
-- `Live`: controlled by its row checkbox and polled once per second while checked.
-- `Trigger`: never polled; run it deliberately with its row `Check` button.
+- stable ID
+- display name
+- category
+- description
+- live or trigger execution mode
+- one focused `Run` implementation
 
-Results are shown per mechanism, including status, details, and the last check time. The final status line reports `debugger detected`, `clean`, or an error state.
+Mechanisms self-register through `MechanismRegistrar`, so the UI can discover and display them without hardcoding each row in the main window.
 
-The first registered mechanisms are framework self-tests. They are not anti-debugging techniques; they only verify that live execution, trigger execution, registration, and UI result rendering are wired correctly.
+## Source Material
 
-To add a real mechanism after studying a ScyllaHide section:
+The initial mechanism set was developed while studying ScyllaHide's documentation and behavior. The project also cross-references public anti-debugging technique catalogs, especially for process-memory and exception-routing topics.
 
-1. Create a class that implements `IAntiDebugMechanism`.
-2. Return metadata from `Id`, `Name`, `Category`, and `Description`.
-3. Implement `Run` so it performs only that one local, educational check.
-4. Decide whether the mechanism is `Live` or `Trigger`. Override `SupportsLiveMode` to return `false` for trigger-only mechanisms.
-5. Register it with the mechanism registry.
-6. Add the source and header to the Visual Studio project.
-
-## Phase 2: Understanding Anti-Anti-Debugging
-
-The original idea for the second step was to write an anti-anti-debug library.
-
-Instead of reinventing that wheel, this project will use ScyllaHide itself as the reference implementation. The goal is to understand how ScyllaHide mitigates each technique and to verify those mitigations in the training program.
-
-For each mechanism, the lab flow should be:
-
-1. Run the program normally.
-2. Run it under x64dbg.
-3. Run it under x64dbg with ScyllaHide enabled.
-4. Compare results.
-5. Explain why the observable artifact changed or did not change.
-
-## Phase 3: Advanced Research
-
-Future work may explore advanced anti-debugging techniques and the limits of ScyllaHide.
-
-This phase is intentionally deferred. Any advanced technique must be discussed first, scoped carefully, and kept educational, local, and non-destructive.
-
-## Teaching Framework
-
-Anti-debugging is not a random list of tricks. Each technique is an observation.
-
-For every mechanism, the course notes should answer:
-
-1. What is the program observing?
-2. Why is that thing observable?
-3. How reliable is the observation?
-4. How can a reverse engineer hide, fake, patch, or avoid that observation?
-5. What does this teach about Windows internals and debugging?
-
-## Per-Mechanism Notes Format
-
-Each ScyllaHide technique should be documented with this structure:
-
-```text
-Technique: <name>
-
-1. What it checks
-2. Why it works
-3. Minimal demo code
-4. How to test
-5. What to observe in the debugger
-6. How ScyllaHide likely mitigates it
-7. Teaching notes
-```
-
-## Current Source Material
+Reference material used during development:
 
 - `ScyllaHide.pdf`
+- ScyllaHide source code
+- Check Point Anti-Debug techniques
 
-We will go through this document section by section and add mechanisms only when they have been studied.
+## Advanced Work
+
+Future advanced demos should probably live outside this beginner UI. Good standalone lab candidates include:
+
+- software breakpoint byte scanning
+- anti-step-over return-address checks
+- code checksum and patch detection
+- TLS callback timing
+- working-set / copy-on-write memory checks
+- memory-breakpoint and guard-page behavior
+
+Keeping those as separate programs makes it easier to demonstrate fragile runtime behavior without making the main training UI crash-prone or confusing.

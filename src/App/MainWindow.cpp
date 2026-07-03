@@ -3,6 +3,7 @@
 #include "../Core/MechanismRegistry.h"
 
 #include <CommCtrl.h>
+#include <shellapi.h>
 #include <Uxtheme.h>
 
 #include <algorithm>
@@ -23,6 +24,8 @@ constexpr int kButtonHeight = 30;
 constexpr int kHeaderHeight = 24;
 constexpr int kRowHeight = 36;
 constexpr int kStatusHeight = 24;
+constexpr int kFooterLinkId = 1003;
+constexpr int kFooterLinkWidth = 310;
 constexpr int kMinWindowWidth = 1060;
 constexpr int kMinWindowHeight = 360;
 constexpr int kRowsStatusGap = 8;
@@ -42,6 +45,9 @@ constexpr int kColumnGap = 8;
 constexpr COLORREF kDefaultTextColor = RGB(32, 32, 32);
 constexpr COLORREF kCleanTextColor = RGB(18, 128, 75);
 constexpr COLORREF kDetectedTextColor = RGB(190, 32, 38);
+constexpr const wchar_t* kRepositoryUrl = L"https://github.com/huanglanzhiguan/AntiDebugTraining";
+constexpr const wchar_t* kRepositoryLinkText =
+    LR"(<a href="https://github.com/huanglanzhiguan/AntiDebugTraining">huanglanzhiguan/AntiDebugTraining</a>)";
 
 std::wstring Copy(std::wstring_view value) {
     return std::wstring(value.data(), value.size());
@@ -194,7 +200,7 @@ MainWindow::MainWindow(HINSTANCE instance)
 bool MainWindow::Create(int show_command) {
     INITCOMMONCONTROLSEX controls = {};
     controls.dwSize = sizeof(controls);
-    controls.dwICC = ICC_STANDARD_CLASSES;
+    controls.dwICC = ICC_STANDARD_CLASSES | ICC_LINK_CLASS;
     InitCommonControlsEx(&controls);
 
     const wchar_t* class_name = L"AntiDebugTrainingMainWindow";
@@ -370,6 +376,18 @@ LRESULT MainWindow::HandleMessage(UINT message, WPARAM wparam, LPARAM lparam) {
         }
         break;
 
+    case WM_NOTIFY: {
+        const auto* notification = reinterpret_cast<NMHDR*>(lparam);
+        if (notification != nullptr &&
+            notification->idFrom == kFooterLinkId &&
+            (notification->code == NM_CLICK || notification->code == NM_RETURN)) {
+            ShellExecuteW(window_, L"open", kRepositoryUrl, nullptr, nullptr, SW_SHOWNORMAL);
+            return 0;
+        }
+
+        break;
+    }
+
     case WM_CTLCOLORSTATIC: {
         HDC dc = reinterpret_cast<HDC>(wparam);
         SetBkColor(dc, RGB(250, 250, 250));
@@ -445,6 +463,21 @@ void MainWindow::CreateControls() {
 
     status_label_ = CreateStaticLabel(window_, instance_, L"Ready.");
     ApplyUIFont(status_label_);
+
+    footer_link_ = CreateWindowExW(
+        0,
+        L"SysLink",
+        kRepositoryLinkText,
+        WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_TABSTOP,
+        0,
+        0,
+        0,
+        0,
+        window_,
+        ControlId(kFooterLinkId),
+        instance_,
+        nullptr);
+    ApplyUIFont(footer_link_);
 }
 
 void MainWindow::CreateHeaderControls() {
@@ -566,11 +599,16 @@ void MainWindow::LayoutControls(int width, int height) {
         }
     }
 
+    const int footer_y = height - kOuterMargin - kStatusHeight;
+    const int footer_link_width = (std::min)(kFooterLinkWidth, content_width);
+    const int status_width = (std::max)(20, content_width - footer_link_width - kColumnGap);
+
+    MoveWindow(status_label_, kOuterMargin, footer_y, status_width, kStatusHeight, TRUE);
     MoveWindow(
-        status_label_,
-        kOuterMargin,
-        height - kOuterMargin - kStatusHeight,
-        content_width,
+        footer_link_,
+        width - kOuterMargin - footer_link_width,
+        footer_y,
+        footer_link_width,
         kStatusHeight,
         TRUE);
 }

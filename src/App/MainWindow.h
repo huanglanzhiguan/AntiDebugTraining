@@ -80,6 +80,7 @@ private:
     HWND header_details_label_ = nullptr;
     HWND header_last_checked_label_ = nullptr;
     HWND status_label_ = nullptr;
+    HWND footer_link_ = nullptr;
     HFONT ui_font_ = nullptr;
     HFONT header_font_ = nullptr;
     HFONT status_font_ = nullptr;
